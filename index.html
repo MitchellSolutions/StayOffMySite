@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StayOffMySite Your Website. Your Rules.</title>
+  <title>StayOffMySite — Your Website. Your Rules.</title>
   <meta name="description" content="StayOffMySite lets you block specific people from your website contact form by name or email. No code. Set up in minutes. Works on any website.">
 
   <!-- Open Graph -->
@@ -240,6 +240,9 @@
     }
     .waitlist-form button:hover { background: var(--gold); color: var(--ink); }
     .waitlist-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem; }
+    .waitlist-message { font-size: 0.95rem; margin-top: 1.25rem; min-height: 1.25rem; font-weight: 500; }
+    .waitlist-message.success { color: var(--shield); }
+    .waitlist-message.error { color: #B23A48; }
 
     /* FOOTER */
     footer {
@@ -461,9 +464,10 @@
       <h2>Be first through the door.</h2>
       <p>StayOffMySite is in final development. Leave your email and you will be the first to know when it opens, with founding member pricing locked in.</p>
       <div class="waitlist-form">
-        <input type="email" placeholder="Your email address">
-        <button type="button">Notify me</button>
+        <input type="email" id="waitlist-email" placeholder="Your email address" required>
+        <button type="button" id="waitlist-submit">Notify me</button>
       </div>
+      <div class="waitlist-message" id="waitlist-message"></div>
       <p class="waitlist-note">No spam. One email when we launch. That's it.</p>
     </div>
   </section>
@@ -480,6 +484,58 @@
       <a href="mailto:hello@stayoffmysite.com">Contact</a>
     </div>
   </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://trwydehwshoatbfedish.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_tsRc86xgQVkgxNSpJqdyuA_Ehcg0EcQ';
+    const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const emailInput = document.getElementById('waitlist-email');
+    const submitButton = document.getElementById('waitlist-submit');
+    const messageBox = document.getElementById('waitlist-message');
+
+    async function joinWaitlist() {
+      const email = emailInput.value.trim().toLowerCase();
+      messageBox.className = 'waitlist-message';
+      messageBox.textContent = '';
+
+      if (!email || !email.includes('@')) {
+        messageBox.className = 'waitlist-message error';
+        messageBox.textContent = 'Please enter a valid email address.';
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = 'Adding you...';
+
+      const { error } = await sbClient.from('waitlist').insert({ email: email });
+
+      submitButton.disabled = false;
+      submitButton.textContent = 'Notify me';
+
+      if (error) {
+        if (error.code === '23505') {
+          messageBox.className = 'waitlist-message success';
+          messageBox.textContent = "You're already on the list. We'll be in touch.";
+        } else {
+          messageBox.className = 'waitlist-message error';
+          messageBox.textContent = 'Something went wrong. Please try again in a moment.';
+          console.error(error);
+        }
+        return;
+      }
+
+      messageBox.className = 'waitlist-message success';
+      messageBox.textContent = "You're on the list. We'll email you the moment we open.";
+      emailInput.value = '';
+    }
+
+    submitButton.addEventListener('click', joinWaitlist);
+    emailInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') joinWaitlist();
+    });
+  </script>
 
 </body>
 </html>
